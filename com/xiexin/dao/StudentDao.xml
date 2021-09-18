@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.xiexin.dao.StudentDao">
+    <resultMap id="BaseResultMap" type="com.xiexin.bean.Student">
+        <!--下面的 标签要映射到实体类-->
+        <!--id 只有1个-->
+        <!--colum 是数据库中的别名  很多是 下划线的-->
+        <!--property 是实体类中的属性  一般是驼峰-->
+        <id column="s_id" property="s_id"></id>
+        <result column="s_name" property="s_name"></result>
+        <result column="s_birth" property="s_birth"></result>
+        <result column="s_sex" property="s_sex"></result>
+        <association property="score" javaType="com.xiexin.bean.Score">
+            <id column="s_id" property="s_id"></id>
+            <id column="c_id" property="c_id"></id>
+            <result column="s_score" property="s_score"></result>
+        </association>
+    </resultMap>
+    <!--题1：查询"01"课程比"02"课程成绩高的学生的信息及课程分数-->
+    <select id="selectdemo01" resultType="map" parameterType="map">
+    select s.*,s1.s_score 1score,s2.s_score 2score from student s,Score s1,Score s2 where s.s_id=s1.s_id and s.s_id=s2.s_id and s1.c_id=#{c_id1} and s2.c_id=#{c_id2} and s1.s_score>s2.s_score
+    </select>
+    <!--题2：查询"01"课程比"02"课程成绩低的学生的信息及课程分数-->
+    <select id="selectdemo02" resultType="map" parameterType="map">
+    <![CDATA[ select s.*,s1.s_score 1score,s2.s_score 2score from student s,Score s1,Score s2 where s.s_id=s1.s_id and s.s_id=s2.s_id and s1.c_id=#{c_id1} and s2.c_id=#{c_id2} and s1.s_score < s2.s_score ]]>
+    </select>
+    <!--题3：查询平均成绩大于等于60分的同学的学生编号和学生姓名和平均成绩-->
+    <select id="selectdemo03" resultType="map" parameterType="int">
+select s.s_id,s.s_name,avg(s2.s_score) avgSc from Student s,Score s2 where s.s_id=s2.s_id group by s2.s_id HAVING avg(s2.s_score) >=#{s2.s_score}
+   </select>
+    <!--题4：查询平均成绩小于60分的同学的学生编号和学生姓名和平均成绩-->
+    <select id="selectdemo04" resultType="map" parameterType="int">
+        <![CDATA[ select s.s_id,s.s_name,avg(s2.s_score) avgSc from Student s,Score s2 where s.s_id=s2.s_id group by s2.s_id HAVING avg(s2.s_score) <= #{s2.s_score}  ]]>
+  </select>
+    <!--题5：查询所有同学的学生编号、学生姓名、选课总数、所有课程的总成绩 -->
+    <select id="selectdemo05" resultType="map">
+       select s.s_id,s.s_name,count(s2.c_id) as '选课总数',sum(s2.s_score) as '总成绩' from Student s,Score s2 where s.s_id=s2.s_id GROUP BY s2.s_id
+    </select>
+    <!--题6、查询"李"姓老师的数量   用like 模糊查询-->
+    <select id="selectdemo06" resultType="Integer" parameterType="string">
+        select count(*) from Teacher where t_name like #{t_name}"%"
+    </select>
+    <!--题7：查询学过"张三"老师授课的同学的信息   四表联查-->
+    <select id="selectdemo07" resultType="map" parameterType="string">
+        select s.* from Student s,Score s2,Course c,Teacher t where s.s_id=s2.s_id and c.c_id=s2.c_id and t.t_id=c.t_id and t.t_name = #{t.t_name}
+    </select>
+    <!--题8、查询没学过"张三"老师授课的同学的信息    四表联查-->
+    <select id="selectdemo08" resultType="map" parameterType="string">
+      select s.* from Student s,Teacher t,Score s2 where s.s_id=s2.s_id and t.t_id=s2.c_id and s.s_name not in(select Student.s_name from Student,Teacher,Score  where Student.s_id=Score.s_id and Teacher.t_id=Score.c_id and Teacher.t_name= #{Teacher.t_name})
+       </select>
+    <!--题9：查询学过编号为"01"并且也学过编号为"02"的课程的同学的信息-->
+    <select id="selectdemo09" resultType="map" parameterType="map">
+        select * from student where s_id in(select sc.s_id from (select * from score where c_id=#{c_id1}) as sc join (select * from score where c_id=#{c_id2}) as sc2 on sc.s_id=sc2.s_id)
+    </select>
+
+    <!--题10、查询学过编号为"01"但是没有学过编号为"02"的课程的同学的信息-->
+    <select id="selectdemo10" resultType="map" parameterType="map">
+       select s1.* from student s1 join score sc on s1.s_id =sc.s_id and sc.c_id=#{c_id1} where s1.s_id not in(select s1.s_id from student s1 join score sc on s1.s_id = sc.s_id and sc.c_id=#{c_id2})
+     </select>
+
+</mapper>
